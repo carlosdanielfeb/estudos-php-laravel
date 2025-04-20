@@ -1,0 +1,29 @@
+# Usa a imagem base do PHP 8.2 com Apache
+FROM php:8.2-apache
+
+# Atualiza os pacotes e instala extensões e dependências necessárias para o Laravel
+RUN apt-get update && apt-get install -y \
+    zip unzip curl libxml2-dev libonig-dev libzip-dev nano git npm \
+    && docker-php-ext-install pdo pdo_mysql mbstring zip
+
+# Instala o Composer globalmente
+RUN curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer
+
+# Copia o arquivo de configuração personalizado do Apache
+COPY apache.conf /etc/apache2/sites-available/000-default.conf
+
+# Ativa o mod_rewrite necessário para o Laravel
+RUN a2enmod rewrite
+
+# Define o diretório de trabalho
+WORKDIR /var/www/html
+
+# Copia os arquivos do projeto
+COPY . .
+
+# Define permissões (se necessário)
+RUN chown -R www-data:www-data /var/www/html \
+    && chmod -R 755 /var/www/html
+
+# Instala as dependências do Laravel usando o Composer
+RUN composer install --no-interaction --prefer-dist --optimize-autoloader
